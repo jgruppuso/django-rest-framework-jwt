@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 
-from django.utils.timezone import make_aware
+from django.utils.timezone import make_aware, utc
 
 from rest_framework import serializers
 from rest_framework.exceptions import APIException
@@ -42,12 +42,16 @@ class BlacklistTokenSerializer(serializers.ModelSerializer):
         # the same original authentication event.
         token_id = payload.get('orig_jti') or payload.get('jti')
 
-        self.validated_data.update({
-            'token_id': token_id,
-            'user': check_user(payload),
-            'expires_at':
-                make_aware(datetime.utcfromtimestamp(expires_at_unix_time)),
-        })
+        self.validated_data.update(
+            {
+                'token_id': token_id,
+                'user': check_user(payload),
+                'expires_at': make_aware(
+                    datetime.utcfromtimestamp(expires_at_unix_time),
+                    timezone=utc,
+                ),
+            }
+        )
 
         # Don't store the token if we can rely on token IDs.
         # The token values are still sensitive until they expire.
